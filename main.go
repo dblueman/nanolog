@@ -15,7 +15,8 @@ const (
 )
 
 var (
-   level       = 7
+   levels      = []string{"crit", "error", "warn", "info", "debug"}
+   level       = 6
    fatalPrefix string
    errorPrefix string
    warnPrefix  string
@@ -30,11 +31,11 @@ func init() {
       fatalPrefix = "\033[1;31m"
       errorPrefix = "\033[1;31m"
       warnPrefix  = "\033[1;33m"
-      infoPrefix  = "\033[1;32m"
+      infoPrefix  = ""
       debugPrefix = "\033[1;36m"
       suffix      = "\033[m"
    } else {
-      fatalPrefix = "<2>"
+      fatalPrefix = "" // default output must be set to crit by "[Unit] SyslogLevel=crit" in systemd unit
       errorPrefix = "<3>"
       warnPrefix  = "<4>"
       infoPrefix  = "<6>"
@@ -45,6 +46,19 @@ func init() {
 
 func SetMinimum(_level int) {
    level = _level
+}
+
+func SetMinimumStr(_level string) error {
+   for i := range levels {
+      if _level != levels[i] {
+         continue
+      }
+
+      level = i + 3 // starts at crit
+      return nil
+   }
+
+   return fmt.Errorf("unknown level %s", _level)
 }
 
 func Fatal(format string, args ...interface{}) {
