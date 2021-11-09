@@ -16,18 +16,21 @@ const (
 
 var (
    levels      = []string{"crit", "error", "warn", "info", "debug"}
-   level       = 6
    fatalPrefix string
    errorPrefix string
    warnPrefix  string
    infoPrefix  string
    debugPrefix string
    suffix      string
+   level       int
+   interactive bool
 )
 
 func init() {
    _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
-   if err == nil {
+   if err != nil {
+      interactive = true
+      level       = 6
       fatalPrefix = "\033[1;31m"
       errorPrefix = "\033[1;31m"
       warnPrefix  = "\033[1;33m"
@@ -35,6 +38,7 @@ func init() {
       debugPrefix = "\033[1;36m"
       suffix      = "\033[m"
    } else {
+      level       = 7
       fatalPrefix = "" // default output must be set to crit by "[Unit] SyslogLevel=crit" in systemd unit
       errorPrefix = "<3>"
       warnPrefix  = "<4>"
