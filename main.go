@@ -3,6 +3,7 @@ package nanolog
 import (
    "fmt"
    "os"
+   "strings"
 
    "golang.org/x/sys/unix"
 )
@@ -28,7 +29,7 @@ var (
 
 func init() {
    _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
-   if err != nil {
+   if err == nil {
       interactive = true
       level       = 6
       fatalPrefix = "\033[1;31m"
@@ -66,8 +67,11 @@ func SetMinimumStr(_level string) error {
 }
 
 func Fatal(format string, args ...interface{}) {
-   message := fmt.Sprintf(fatalPrefix + format + suffix + "\n", args...)
-   panic(message)
+   message := fmt.Sprintf(format, args...)
+   if !interactive {
+      message = strings.Replace(message, "\n", "\n" + fatalPrefix, -1)
+   }
+   panic(fatalPrefix + message + suffix + "\n")
 }
 
 func Error(format string, args ...interface{}) {
@@ -75,7 +79,11 @@ func Error(format string, args ...interface{}) {
       return
    }
 
-   fmt.Printf(errorPrefix + format + suffix + "\n", args...)
+   message := fmt.Sprintf(format, args...)
+   if !interactive {
+      message = strings.Replace(message, "\n", "\n" + errorPrefix, -1)
+   }
+   fmt.Print(errorPrefix + message + suffix + "\n")
 }
 
 func Warn(format string, args ...interface{}) {
@@ -83,7 +91,11 @@ func Warn(format string, args ...interface{}) {
       return
    }
 
-   fmt.Printf(warnPrefix + format + suffix + "\n", args...)
+   message := fmt.Sprintf(format, args...)
+   if !interactive {
+      message = strings.Replace(message, "\n", "\n" + warnPrefix, -1)
+   }
+   fmt.Print(warnPrefix + message + suffix + "\n")
 }
 
 func Info(format string, args ...interface{}) {
@@ -91,7 +103,11 @@ func Info(format string, args ...interface{}) {
       return
    }
 
-   fmt.Printf(infoPrefix + format + suffix + "\n", args...)
+   message := fmt.Sprintf(format, args...)
+   if !interactive {
+      message = strings.Replace(message, "\n", "\n" + infoPrefix, -1)
+   }
+   fmt.Print(infoPrefix + message + suffix + "\n")
 }
 
 func Debug(format string, args ...interface{}) {
@@ -99,5 +115,9 @@ func Debug(format string, args ...interface{}) {
       return
    }
 
-   fmt.Printf(debugPrefix + format + suffix + "\n", args...)
+   message := fmt.Sprintf(format, args...)
+   if !interactive {
+      message = strings.Replace(message, "\n", "\n" + debugPrefix, -1)
+   }
+   fmt.Print(debugPrefix + message + suffix + "\n")
 }
