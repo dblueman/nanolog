@@ -13,7 +13,7 @@ const (
    LevelWarn  = 5
    LevelInfo  = 6
    LevelDebug = 7
-   maxLine    = 48*1024
+   maxLine    = 47*1024
 )
 
 var (
@@ -70,6 +70,11 @@ func SetMinimumStr(_level string) error {
 func Fatal(format string, args ...interface{}) {
    message := fmt.Sprintf(format, args...)
    if !interactive {
+      // journalctl splits long messages, losing loglevel
+      if len(message) > maxLine {
+         message = message[:maxLine] + " (truncated)"
+      }
+
       message = strings.ReplaceAll(message, "\n", "\n" + fatalPrefix)
    }
    panic(fatalPrefix + message + suffix + "\n")
@@ -82,12 +87,12 @@ func Error(format string, args ...interface{}) {
 
    message := fmt.Sprintf(format, args...)
    if !interactive {
-      message = strings.ReplaceAll(message, "\n", "\n" + errorPrefix)
-
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
+
+      message = strings.ReplaceAll(message, "\n", "\n" + errorPrefix)
    }
 
    fmt.Print(errorPrefix + message + suffix + "\n")
@@ -100,12 +105,12 @@ func Warn(format string, args ...interface{}) {
 
    message := fmt.Sprintf(format, args...)
    if !interactive {
-      message = strings.ReplaceAll(message, "\n", "\n" + warnPrefix)
-
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
+
+      message = strings.ReplaceAll(message, "\n", "\n" + warnPrefix)
    }
 
    fmt.Print(warnPrefix + message + suffix + "\n")
@@ -118,12 +123,12 @@ func Info(format string, args ...interface{}) {
 
    message := fmt.Sprintf(format, args...)
    if !interactive {
-      message = strings.ReplaceAll(message, "\n", "\n" + infoPrefix)
-
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
+
+      message = strings.ReplaceAll(message, "\n", "\n" + infoPrefix)
    }
 
    fmt.Print(infoPrefix + message + suffix + "\n")
@@ -136,12 +141,12 @@ func Debug(format string, args ...interface{}) {
 
    message := fmt.Sprintf(format, args...)
    if !interactive {
-      message = strings.ReplaceAll(message, "\n", "\n" + debugPrefix)
-
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
+
+      message = strings.ReplaceAll(message, "\n", "\n" + debugPrefix)
    }
 
    fmt.Print(debugPrefix + message + suffix + "\n")
