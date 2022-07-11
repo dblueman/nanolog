@@ -14,7 +14,7 @@ import (
    "golang.org/x/sys/unix"
 )
 
-type Microlog struct {
+type Logger struct {
    userPrefix  string
    filter      int
    interactive bool
@@ -49,11 +49,11 @@ var (
 )
 
 // filter 0 means use resasonable defaults
-func New(userPrefix string, filter int) (*Microlog, error) {
+func New(userPrefix string, filter int) (*Logger, error) {
    // check if context is interactive or non-interactive
    _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
 
-   ml := Microlog{userPrefix: userPrefix}
+   ml := Logger{userPrefix: userPrefix}
 
    if err == nil {
       ml.interactive = true
@@ -77,11 +77,11 @@ func New(userPrefix string, filter int) (*Microlog, error) {
    return &ml, nil
 }
 
-func (ml *Microlog) Filter(filter int) {
+func (ml *Logger) Filter(filter int) {
    ml.filter = filter
 }
 
-func (ml *Microlog) NamedFilter(filter string) error {
+func (ml *Logger) NamedFilter(filter string) error {
    for i := range levels {
       if filter != levels[i] {
          continue
@@ -94,7 +94,7 @@ func (ml *Microlog) NamedFilter(filter string) error {
    return fmt.Errorf("unknown level %s", filter)
 }
 
-func (ml *Microlog) Fatal(format string, args ...any) {
+func (ml *Logger) Fatal(format string, args ...any) {
    message := fmt.Sprintf(format, args...)
    prefix := inFatalPrefix
    suffix := inSuffix
@@ -113,7 +113,7 @@ func (ml *Microlog) Fatal(format string, args ...any) {
    panic(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func (ml *Microlog) Error(format string, args ...any) {
+func (ml *Logger) Error(format string, args ...any) {
    if ml.filter < LevelError {
       return
    }
@@ -136,7 +136,7 @@ func (ml *Microlog) Error(format string, args ...any) {
    fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func (ml *Microlog) Warn(format string, args ...any) {
+func (ml *Logger) Warn(format string, args ...any) {
    if ml.filter < LevelWarn {
       return
    }
@@ -159,7 +159,7 @@ func (ml *Microlog) Warn(format string, args ...any) {
    fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func (ml *Microlog) Info(format string, args ...any) {
+func (ml *Logger) Info(format string, args ...any) {
    if ml.filter < LevelInfo {
       return
    }
@@ -182,7 +182,7 @@ func (ml *Microlog) Info(format string, args ...any) {
    fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func (ml *Microlog) Debug(format string, args ...any) {
+func (ml *Logger) Debug(format string, args ...any) {
    if ml.filter < LevelDebug {
       return
    }
