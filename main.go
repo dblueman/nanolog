@@ -53,7 +53,7 @@ func New(userPrefix string, filter int) (*Logger, error) {
    // check if context is interactive or non-interactive
    _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
 
-   ml := Logger{userPrefix: userPrefix}
+   ml := Logger{userPrefix: userPrefix, filter: filter}
 
    if err == nil {
       ml.interactive = true
