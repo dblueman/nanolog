@@ -1,5 +1,5 @@
 module github.com/dblueman/nanolog
 
-go 1.16
+go 1.18
 
-require golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
+require golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d

@@ -9,8 +9,13 @@ func Test(t *testing.T) {
    Warn("should see this %s", "warning")
    Info("should see this info")
    Debug("should see this debug")
-   SetMinimum(LevelWarn)
-   Debug("should not see this debug message")
-   Info("should not see this info message")
-   Warn("should see this warning")
+
+   l, err := New("[prefix] ", LevelWarn)
+   if err != nil {
+      t.Fatal(err)
+   }
+
+   l.Debug("should not see this debug message")
+   l.Info("should not see this info message")
+   l.Warn("should see this warning")
 }

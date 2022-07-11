@@ -1,3 +1,9 @@
+// Package nanolog implements a lightweight logger, featuring:
+// - severity given by API, ie Infof(), Debugf() and related
+// - automatic detection of interactive (terminal) or uninteractive (daemon) use
+// - appropriate colour prefix for interactive output
+// - appropriate syslog prefix for non-interactive output
+
 package nanolog
 
 import (
@@ -8,146 +14,193 @@ import (
    "golang.org/x/sys/unix"
 )
 
+type Microlog struct {
+   userPrefix  string
+   filter      int
+   interactive bool
+}
+
 const (
    LevelError = 4
    LevelWarn  = 5
    LevelInfo  = 6
    LevelDebug = 7
    maxLine    = 47*1024
+
+   // uninteractive strings
+   inFatalPrefix = "\033[1;31m"
+   inErrorPrefix = "\033[1;31m"
+   inWarnPrefix  = "\033[1;33m"
+   inInfoPrefix  = ""
+   inDebugPrefix = "\033[1;36m"
+   inSuffix      = "\033[m"
+
+   // uninteractive strings
+   unFatalPrefix = "" // default output must be set to crit by "[Unit] SyslogLevel=crit" in systemd unit
+   unErrorPrefix = "<3>"
+   unWarnPrefix  = "<4>"
+   unInfoPrefix  = "<6>"
+   unDebugPrefix = "<7>"
+   unSuffix      = ""
 )
 
 var (
-   levels      = [...]string{"crit", "error", "warn", "info", "debug"}
-   fatalPrefix string
-   errorPrefix string
-   warnPrefix  string
-   infoPrefix  string
-   debugPrefix string
-   suffix      string
-   level       int
-   interactive bool
+   levels = [...]string{"crit", "error", "warn", "info", "debug"}
 )
 
-func init() {
+// filter 0 means use resasonable defaults
+func New(userPrefix string, filter int) (*Microlog, error) {
+   // check if context is interactive or non-interactive
    _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
+
+   ml := Microlog{userPrefix: userPrefix}
+
    if err == nil {
-      interactive = true
-      level       = 6
-      fatalPrefix = "\033[1;31m"
-      errorPrefix = "\033[1;31m"
-      warnPrefix  = "\033[1;33m"
-      infoPrefix  = ""
-      debugPrefix = "\033[1;36m"
-      suffix      = "\033[m"
-   } else {
-      level       = 7
-      fatalPrefix = "" // default output must be set to crit by "[Unit] SyslogLevel=crit" in systemd unit
-      errorPrefix = "<3>"
-      warnPrefix  = "<4>"
-      infoPrefix  = "<6>"
-      debugPrefix = "<7>"
-      suffix      = ""
+      ml.interactive = true
+   } else if err != unix.ENOTTY {
+      return nil, err
    }
+
+   if filter > 7 {
+      return nil, fmt.Errorf("invalid log level %d", filter)
+   }
+
+   // default filter threshold
+   if filter == 0 {
+      if ml.interactive {
+         ml.filter = 6
+      } else {
+         ml.filter = 7
+      }
+   }
+
+   return &ml, nil
 }
 
-func SetMinimum(_level int) {
-   level = _level
+func (ml *Microlog) Filter(filter int) {
+   ml.filter = filter
 }
 
-func SetMinimumStr(_level string) error {
+func (ml *Microlog) NamedFilter(filter string) error {
    for i := range levels {
-      if _level != levels[i] {
+      if filter != levels[i] {
          continue
       }
 
-      level = i + 3 // starts at crit
+      ml.filter = i + 3 // starts at crit
       return nil
    }
 
-   return fmt.Errorf("unknown level %s", _level)
+   return fmt.Errorf("unknown level %s", filter)
 }
 
-func Fatal(format string, args ...interface{}) {
+func (ml *Microlog) Fatal(format string, args ...any) {
    message := fmt.Sprintf(format, args...)
-   if !interactive {
+   prefix := inFatalPrefix
+   suffix := inSuffix
+
+   if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
-      message = strings.ReplaceAll(message, "\n", "\n" + fatalPrefix)
+      message = strings.ReplaceAll(message, "\n", "\n" + unFatalPrefix)
+      prefix = unFatalPrefix
+      suffix = unSuffix
    }
-   panic(fatalPrefix + message + suffix + "\n")
+
+   panic(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func Error(format string, args ...interface{}) {
-   if level < LevelError {
+func (ml *Microlog) Error(format string, args ...any) {
+   if ml.filter < LevelError {
       return
    }
 
    message := fmt.Sprintf(format, args...)
-   if !interactive {
+   prefix := inErrorPrefix
+   suffix := inSuffix
+
+   if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
-      message = strings.ReplaceAll(message, "\n", "\n" + errorPrefix)
+      message = strings.ReplaceAll(message, "\n", "\n" + unErrorPrefix)
+      prefix = unErrorPrefix
+      suffix = unSuffix
    }
 
-   fmt.Print(errorPrefix + message + suffix + "\n")
+   fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func Warn(format string, args ...interface{}) {
-   if level < LevelWarn {
+func (ml *Microlog) Warn(format string, args ...any) {
+   if ml.filter < LevelWarn {
       return
    }
 
    message := fmt.Sprintf(format, args...)
-   if !interactive {
+   prefix := inWarnPrefix
+   suffix := inSuffix
+
+   if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
-      message = strings.ReplaceAll(message, "\n", "\n" + warnPrefix)
+      message = strings.ReplaceAll(message, "\n", "\n" + unWarnPrefix)
+      prefix = unWarnPrefix
+      suffix = unSuffix
    }
 
-   fmt.Print(warnPrefix + message + suffix + "\n")
+   fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func Info(format string, args ...interface{}) {
-   if level < LevelInfo {
+func (ml *Microlog) Info(format string, args ...any) {
+   if ml.filter < LevelInfo {
       return
    }
 
    message := fmt.Sprintf(format, args...)
-   if !interactive {
+   prefix := inInfoPrefix
+   suffix := inSuffix
+
+   if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
-      message = strings.ReplaceAll(message, "\n", "\n" + infoPrefix)
+      message = strings.ReplaceAll(message, "\n", "\n" + unInfoPrefix)
+      prefix = unInfoPrefix
+      suffix = unSuffix
    }
 
-   fmt.Print(infoPrefix + message + suffix + "\n")
+   fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
 
-func Debug(format string, args ...interface{}) {
-   if level < LevelDebug {
+func (ml *Microlog) Debug(format string, args ...any) {
+   if ml.filter < LevelDebug {
       return
    }
 
    message := fmt.Sprintf(format, args...)
-   if !interactive {
+   prefix := inDebugPrefix
+   suffix := inSuffix
+
+   if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
-      message = strings.ReplaceAll(message, "\n", "\n" + debugPrefix)
+      message = strings.ReplaceAll(message, "\n", "\n" + unDebugPrefix)
+      prefix = unDebugPrefix
+      suffix = unSuffix
    }
 
-   fmt.Print(debugPrefix + message + suffix + "\n")
+   fmt.Print(prefix + ml.userPrefix + message + suffix + "\n")
 }
