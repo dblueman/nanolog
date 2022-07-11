@@ -17,7 +17,7 @@ const (
 )
 
 var (
-   levels      = []string{"crit", "error", "warn", "info", "debug"}
+   levels      = [...]string{"crit", "error", "warn", "info", "debug"}
    fatalPrefix string
    errorPrefix string
    warnPrefix  string
