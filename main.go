@@ -65,13 +65,17 @@ func New(userPrefix string, filter int) (*Logger, error) {
       return nil, fmt.Errorf("invalid log level %d", filter)
    }
 
+   if defaultFilter == 0 {
+      if ml.interactive {
+         defaultFilter = 6
+      } else {
+         defaultFilter = 7
+      }
+   }
+
    // default filter threshold
    if filter == 0 {
-      if ml.interactive {
-         ml.filter = 6
-      } else {
-         ml.filter = 7
-      }
+      ml.filter = defaultFilter
    }
 
    return &ml, nil

@@ -1,7 +1,8 @@
 package nanolog
 
 var (
-   simple, _ = New("", 0)
+   defaultFilter int
+   simple, _     = New("", 0)
 )
 
 func Filter(filter int) {
