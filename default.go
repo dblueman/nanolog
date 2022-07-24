@@ -2,33 +2,33 @@ package nanolog
 
 var (
    defaultFilter int
-   simple, _     = New("", 0)
+   Default, _     = New("", 0)
 )
 
 func Filter(filter int) {
-   simple.Filter(filter)
+   Default.Filter(filter)
 }
 
 func NamedFilter(filter string) error {
-   return simple.NamedFilter(filter)
+   return Default.NamedFilter(filter)
 }
 
 func Fatal(format string, args ...any) {
-   simple.Fatal(format, args...)
+   Default.Fatal(format, args...)
 }
 
 func Error(format string, args ...any) {
-   simple.Error(format, args...)
+   Default.Error(format, args...)
 }
 
 func Warn(format string, args ...any) {
-   simple.Warn(format, args...)
+   Default.Warn(format, args...)
 }
 
 func Info(format string, args ...any) {
-   simple.Info(format, args...)
+   Default.Info(format, args...)
 }
 
 func Debug(format string, args ...any) {
-   simple.Debug(format, args...)
+   Default.Debug(format, args...)
 }
