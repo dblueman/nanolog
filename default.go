@@ -6,11 +6,18 @@ var (
 )
 
 func Filter(filter int) {
+   defaultFilter = filter
    Default.Filter(filter)
 }
 
 func NamedFilter(filter string) error {
-   return Default.NamedFilter(filter)
+   err := Default.NamedFilter(filter)
+   if err != nil {
+      return err
+   }
+
+   defaultFilter = Default.filter
+   return nil
 }
 
 func Fatal(format string, args ...any) {

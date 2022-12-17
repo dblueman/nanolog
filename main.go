@@ -3,7 +3,6 @@
 // - automatic detection of interactive (terminal) or uninteractive (daemon) use
 // - appropriate colour prefix for interactive output
 // - appropriate syslog prefix for non-interactive output
-
 package nanolog
 
 import (
@@ -50,19 +49,18 @@ var (
 
 // filter 0 means use resasonable defaults
 func New(userPrefix string, filter int) (*Logger, error) {
-   // check if context is interactive or non-interactive
-   _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
+   if filter > 7 {
+      return nil, fmt.Errorf("invalid log level %d", filter)
+   }
 
    ml := Logger{userPrefix: userPrefix, filter: filter}
 
+   // check if context is interactive or non-interactive
+   _, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
    if err == nil {
       ml.interactive = true
    } else if err != unix.ENOTTY {
-      return nil, err
-   }
-
-   if filter > 7 {
-      return nil, fmt.Errorf("invalid log level %d", filter)
+      return nil, fmt.Errorf("New: %w", err)
    }
 
    if defaultFilter == 0 {
