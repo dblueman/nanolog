@@ -101,6 +101,9 @@ func (ml *Logger) Fatal(format string, args ...any) {
    prefix := inFatalPrefix
    suffix := inSuffix
 
+   // apply user prefix to remaining lines
+   message = strings.ReplaceAll(message, "\n", "\n" + ml.userPrefix)
+
    if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
@@ -124,12 +127,16 @@ func (ml *Logger) Error(format string, args ...any) {
    prefix := inErrorPrefix
    suffix := inSuffix
 
+   // apply user prefix to remaining lines
+   message = strings.ReplaceAll(message, "\n", "\n" + ml.userPrefix)
+
    if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
          message = message[:maxLine] + " (truncated)"
       }
 
+      // apply syslog prefix to every line
       message = strings.ReplaceAll(message, "\n", "\n" + unErrorPrefix)
       prefix = unErrorPrefix
       suffix = unSuffix
@@ -146,6 +153,9 @@ func (ml *Logger) Warn(format string, args ...any) {
    message := fmt.Sprintf(format, args...)
    prefix := inWarnPrefix
    suffix := inSuffix
+
+   // apply user prefix to remaining lines
+   message = strings.ReplaceAll(message, "\n", "\n" + ml.userPrefix)
 
    if !ml.interactive {
       // journalctl splits long messages, losing loglevel
@@ -170,6 +180,9 @@ func (ml *Logger) Info(format string, args ...any) {
    prefix := inInfoPrefix
    suffix := inSuffix
 
+   // apply user prefix to remaining lines
+   message = strings.ReplaceAll(message, "\n", "\n" + ml.userPrefix)
+
    if !ml.interactive {
       // journalctl splits long messages, losing loglevel
       if len(message) > maxLine {
@@ -192,6 +205,9 @@ func (ml *Logger) Debug(format string, args ...any) {
    message := fmt.Sprintf(format, args...)
    prefix := inDebugPrefix
    suffix := inSuffix
+
+   // apply user prefix to remaining lines
+   message = strings.ReplaceAll(message, "\n", "\n" + ml.userPrefix)
 
    if !ml.interactive {
       // journalctl splits long messages, losing loglevel
